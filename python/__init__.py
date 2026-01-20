@@ -24,6 +24,7 @@ from typing import (
     Optional,
     Pattern,
     Sequence,
+    Set,
     TypeVar,
     Union,
 )
@@ -31,27 +32,31 @@ from typing import (
 import re
 from pydantic import BaseModel, Field
 
-# Re-export the low-level Rust bindings under a private name so that we can
-# keep the *public* namespace clean and purely Pythonic.
+
 try:
-    from .openai_harmony import (
+    from .openai_harmony import (  # type: ignore[import-not-found]
         HarmonyError as HarmonyError,  # expose the actual Rust error directly
     )
-    from .openai_harmony import PyHarmonyEncoding as _PyHarmonyEncoding  # type: ignore
-    from .openai_harmony import (
-        PyStreamableParser as _PyStreamableParser,  # type: ignore
+    from .openai_harmony import PyHarmonyEncoding as _PyHarmonyEncoding  # type: ignore[import-not-found]
+    from .openai_harmony import (  # type: ignore[import-not-found]
+        PyStreamableParser as _PyStreamableParser,  # type: ignore[import-not-found]
     )
-    from .openai_harmony import (
-        load_harmony_encoding as _load_harmony_encoding,  # type: ignore
+    from .openai_harmony import (  # type: ignore[import-not-found]
+        load_harmony_encoding as _load_harmony_encoding,  # type: ignore[import-not-found]
     )
 
 except ModuleNotFoundError:  # pragma: no cover – raised during type-checking
-    # When running *mypy* without the compiled extension in place we still want
-    # to succeed.  Therefore we create dummy stubs that satisfy the type
-    # checker.  They will, however, raise at **runtime** if accessed.
+    
 
     class _Stub:  # pylint: disable=too-few-public-methods
-        def __getattr__(self, name: str) -> None:  # noqa: D401
+        def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: D401
+            raise RuntimeError(
+                "The compiled harmony bindings are not available. Make sure to "
+                "build the project with `maturin develop` before running this "
+                "code."
+            )
+
+        def __getattr__(self, name: str) -> Any:  # noqa: D401
             raise RuntimeError(
                 "The compiled harmony bindings are not available. Make sure to "
                 "build the project with `maturin develop` before running this "
@@ -61,7 +66,7 @@ except ModuleNotFoundError:  # pragma: no cover – raised during type-checking
     _load_harmony_encoding = _Stub()  # type: ignore
     _PyHarmonyEncoding = _Stub()  # type: ignore
     _PyStreamableParser = _Stub()  # type: ignore
-    _HarmonyError = RuntimeError
+    HarmonyError = RuntimeError  # type: ignore
 
 
 def _special_token_regex(tokens: frozenset[str]) -> Pattern[str]:
@@ -81,9 +86,6 @@ def raise_disallowed_special_token(token: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Chat-related data-structures (mirroring ``src/chat.rs``)
-# ---------------------------------------------------------------------------
 
 
 class Role(str, Enum):
@@ -109,7 +111,7 @@ class Author(BaseModel):
         return cls(role=role, name=name)
 
 
-# Content hierarchy ---------------------------------------------------------
+
 
 
 T = TypeVar("T")
@@ -161,7 +163,7 @@ class ToolNamespaceConfig(BaseModel):
 
     @staticmethod
     def browser() -> "ToolNamespaceConfig":
-        from .openai_harmony import (
+        from .openai_harmony import (  # type: ignore[import-not-found]
             get_tool_namespace_config as _get_tool_namespace_config,
         )
 
@@ -170,7 +172,7 @@ class ToolNamespaceConfig(BaseModel):
 
     @staticmethod
     def python() -> "ToolNamespaceConfig":
-        from .openai_harmony import (
+        from .openai_harmony import (  # type: ignore[import-not-found]
             get_tool_namespace_config as _get_tool_namespace_config,
         )
 
@@ -244,7 +246,7 @@ class SystemContent(Content):
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "SystemContent":
+    def from_dict(cls, raw: dict) -> "SystemContent":  # type: ignore[call-arg]
         return cls(**raw)
 
 
@@ -279,7 +281,7 @@ class DeveloperContent(Content):
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "DeveloperContent":
+    def from_dict(cls, raw: dict) -> "DeveloperContent":  # type: ignore[call-arg]
         return cls(**raw)
 
 
@@ -379,9 +381,9 @@ class Message(BaseModel):
             if raw.get("type") == "text":
                 contents.append(TextContent(**raw))
             elif raw.get("type") == "system_content":
-                contents.append(SystemContent(**raw))
+                contents.append(SystemContent(**raw))  # type: ignore[call-arg]
             elif raw.get("type") == "developer_content":
-                contents.append(DeveloperContent(**raw))
+                contents.append(DeveloperContent(**raw))  # type: ignore[call-arg]
             else:  # pragma: no cover – unknown variant
                 raise ValueError(f"Unknown content variant: {raw}")
 
@@ -399,7 +401,7 @@ class Conversation(BaseModel):
     def from_messages(cls, messages: Sequence[Message]) -> "Conversation":  # noqa: D401
         return cls(messages=list(messages))
 
-    def __iter__(self):
+    def __iter__(self):  # type: ignore[override]
         return iter(self.messages)
 
     # Serialisation helpers -------------------------------------------------
@@ -432,7 +434,7 @@ class RenderOptions(BaseModel):
 class HarmonyEncoding:
     """High-level wrapper around the Rust ``PyHarmonyEncoding`` class."""
 
-    def __init__(self, inner: _PyHarmonyEncoding):
+    def __init__(self, inner: "_PyHarmonyEncoding"): # type: ignore
         self._inner = inner
 
     # ------------------------------------------------------------------
@@ -444,7 +446,7 @@ class HarmonyEncoding:
         return self._inner.name  # type: ignore[attr-defined]
 
     @functools.cached_property
-    def special_tokens_set(self) -> set[str]:
+    def special_tokens_set(self) -> "set[str]":
         return set(self._inner.special_tokens())
 
     # -- Rendering -----------------------------------------------------
@@ -522,7 +524,7 @@ class HarmonyEncoding:
     def parse_messages_from_completion_tokens(
         self,
         tokens: Sequence[int],
-        role: Optional[Role] | None = None,
+        role: Optional["Role"] = None,
         *,
         strict: bool = True,
     ) -> List[Message]:
@@ -541,8 +543,8 @@ class HarmonyEncoding:
         self,
         text: str,
         *,
-        allowed_special: Literal["all"] | AbstractSet[str] = set(),
-        disallowed_special: Literal["all"] | Collection[str] = "all",
+        allowed_special: Union[Literal["all"], "Set[str]"] = set(),
+        disallowed_special: Union[Literal["all"], Collection[str]] = "all",
     ) -> list[int]:
         """Encodes a string into tokens.
 
@@ -626,7 +628,7 @@ class StreamableParser:
     def __init__(
         self,
         encoding: HarmonyEncoding,
-        role: Role | None,
+        role: Optional["Role"],
         *,
         strict: bool = True,
     ) -> None:
@@ -689,14 +691,14 @@ class StreamableParser:
 # Public helper --------------------------------------------------------------
 
 
-def load_harmony_encoding(name: str | "HarmonyEncodingName") -> HarmonyEncoding:  # type: ignore[name-defined]
+def load_harmony_encoding(name: Union[str, "HarmonyEncodingName"]) -> HarmonyEncoding:
     """Load an encoding by *name* (delegates to the Rust implementation)."""
 
     # Allow both strings and enum values.
     if not isinstance(name, str):
         name = str(name)
 
-    inner: _PyHarmonyEncoding = _load_harmony_encoding(name)
+    inner: _PyHarmonyEncoding = _load_harmony_encoding(name)  # type: ignore[misc]
     return HarmonyEncoding(inner)
 
 

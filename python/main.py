@@ -3,6 +3,12 @@ FastAPI server to host the Q&A module locally.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Add the current directory to Python path so imports work correctly
+sys.path.insert(0, str(Path(__file__).parent))
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
