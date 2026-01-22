@@ -8,7 +8,6 @@ import sys
 import subprocess
 from qa_module import CustomQAModule
 
-
 def main():
     print("=" * 60)
     print(" Q&A Module - Trained on Your PDF Data Only")
