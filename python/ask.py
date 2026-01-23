@@ -13,7 +13,7 @@ def main():
     print(" Q&A Module - Trained on Your PDF Data Only")
     print("=" * 60)
     
-    # Check for Ollama (local LLM - no API key needed!)
+    
     print("\n  Checking for Ollama (local AI model)...")
     try:
         response = subprocess.run(
@@ -32,17 +32,17 @@ def main():
         print("   4. Then run this script again")
         return
     
-    # Check for PDF - adjust path to go up to data folder
+   
     pdf_path = "../data/exchange.pdf"
     if not os.path.exists(pdf_path):
         print(f" Error: PDF not found at {pdf_path}")
         sys.exit(1)
     
-    # Initialize module
+    
     print("\n Initializing Q&A module...")
     qa = CustomQAModule(pdf_path)
     
-    # Interactive Q&A
+    
     print("\n" + "=" * 60)
     print(" Ask questions about your PDF (type 'quit' to exit)")
     print("=" * 60)

@@ -35,7 +35,7 @@ from pydantic import BaseModel, Field
 
 try:
     from .openai_harmony import (  # type: ignore[import-not-found]
-        HarmonyError as HarmonyError,  # expose the actual Rust error directly
+        HarmonyError as HarmonyError,  
     )
     from .openai_harmony import PyHarmonyEncoding as _PyHarmonyEncoding  # type: ignore[import-not-found]
     from .openai_harmony import (  # type: ignore[import-not-found]
@@ -45,28 +45,28 @@ try:
         load_harmony_encoding as _load_harmony_encoding,  # type: ignore[import-not-found]
     )
 
-except ModuleNotFoundError:  # pragma: no cover – raised during type-checking
+except ModuleNotFoundError:  
     
 
-    class _Stub:  # pylint: disable=too-few-public-methods
-        def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: D401
+    class _Stub: 
+        def __call__(self, *args: Any, **kwargs: Any) -> Any:  
             raise RuntimeError(
                 "The compiled harmony bindings are not available. Make sure to "
                 "build the project with `maturin develop` before running this "
                 "code."
             )
 
-        def __getattr__(self, name: str) -> Any:  # noqa: D401
+        def __getattr__(self, name: str) -> Any:  
             raise RuntimeError(
                 "The compiled harmony bindings are not available. Make sure to "
                 "build the project with `maturin develop` before running this "
                 "code."
             )
 
-    _load_harmony_encoding = _Stub()  # type: ignore
-    _PyHarmonyEncoding = _Stub()  # type: ignore
-    _PyStreamableParser = _Stub()  # type: ignore
-    HarmonyError = RuntimeError  # type: ignore
+    _load_harmony_encoding = _Stub() 
+    _PyHarmonyEncoding = _Stub()  
+    _PyStreamableParser = _Stub() 
+    HarmonyError = RuntimeError  
 
 
 def _special_token_regex(tokens: frozenset[str]) -> Pattern[str]:
@@ -98,7 +98,7 @@ class Role(str, Enum):
     TOOL = "tool"
 
     @classmethod
-    def _missing_(cls, value: object) -> "Role":  # type: ignore[override]
+    def _missing_(cls, value: object) -> "Role":  
         raise ValueError(f"Unknown role: {value!r}")
 
 
@@ -107,7 +107,7 @@ class Author(BaseModel):
     name: Optional[str] = None
 
     @classmethod
-    def new(cls, role: Role, name: str) -> "Author":  # noqa: D401 – keep parity with Rust API
+    def new(cls, role: Role, name: str) -> "Author":  
         return cls(role=role, name=name)
 
 
@@ -117,7 +117,7 @@ class Author(BaseModel):
 T = TypeVar("T")
 
 
-class Content(BaseModel):  # noqa: D101 – simple wrapper
+class Content(BaseModel): 
     def to_dict(self) -> Dict[str, Any]:
         raise NotImplementedError
 
@@ -137,7 +137,7 @@ class ToolDescription(BaseModel):
     @classmethod
     def new(
         cls, name: str, description: str, parameters: Optional[dict] = None
-    ) -> "ToolDescription":  # noqa: D401
+    ) -> "ToolDescription":  
         return cls(name=name, description=description, parameters=parameters)
 
 
@@ -152,7 +152,7 @@ class ChannelConfig(BaseModel):
     channel_required: bool
 
     @classmethod
-    def require_channels(cls, channels: List[str]) -> "ChannelConfig":  # noqa: D401
+    def require_channels(cls, channels: List[str]) -> "ChannelConfig": 
         return cls(valid_channels=channels, channel_required=True)
 
 
@@ -198,7 +198,7 @@ class SystemContent(Content):
     def new(cls) -> "SystemContent":
         return cls()
 
-    # Fluent interface ------------------------------------------------------
+   
 
     def with_model_identity(self, model_identity: str) -> "SystemContent":
         self.model_identity = model_identity
@@ -246,7 +246,7 @@ class SystemContent(Content):
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "SystemContent":  # type: ignore[call-arg]
+    def from_dict(cls, raw: dict) -> "SystemContent":  
         return cls(**raw)
 
 
@@ -281,11 +281,11 @@ class DeveloperContent(Content):
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "DeveloperContent":  # type: ignore[call-arg]
+    def from_dict(cls, raw: dict) -> "DeveloperContent": 
         return cls(**raw)
 
 
-# Message & Conversation -----------------------------------------------------
+
 
 
 class Message(BaseModel):
@@ -295,9 +295,7 @@ class Message(BaseModel):
     recipient: Optional[str] = None
     content_type: Optional[str] = None
 
-    # ------------------------------------------------------------------
-    # Convenience constructors (mirroring the Rust API)
-    # ------------------------------------------------------------------
+   
 
     @classmethod
     def from_author_and_content(
@@ -310,7 +308,7 @@ class Message(BaseModel):
     @classmethod
     def from_role_and_content(
         cls, role: Role, content: Union[str, Content]
-    ) -> "Message":  # noqa: D401 – parity with Rust API
+    ) -> "Message":  
         return cls.from_author_and_content(Author(role=role), content)
 
     @classmethod
@@ -319,9 +317,7 @@ class Message(BaseModel):
     ) -> "Message":
         return cls(author=Author(role=role), content=list(contents))
 
-    # ------------------------------------------------------------------
-    # Builder helpers
-    # ------------------------------------------------------------------
+    
 
     def adding_content(self, content: Union[str, Content]) -> "Message":
         if isinstance(content, str):
@@ -341,11 +337,7 @@ class Message(BaseModel):
         self.content_type = content_type
         return self
 
-    # ------------------------------------------------------------------
-    # Serialisation helpers
-    # ------------------------------------------------------------------
-
-    def to_dict(self) -> Dict[str, Any]:  # noqa: D401 – simple mapper
+    def to_dict(self) -> Dict[str, Any]:  
         out: Dict[str, Any] = {
             **self.author.model_dump(),
             "content": [c.to_dict() for c in self.content],
@@ -363,7 +355,7 @@ class Message(BaseModel):
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Message":
-        # Simple, sufficient implementation for test-roundtrip purposes.
+        
         role = Role(data["role"])
         author = Author(role=role, name=data.get("name"))
 
@@ -371,9 +363,7 @@ class Message(BaseModel):
 
         raw_content = data["content"]
 
-        # The Rust side serialises *single* text contents as a **plain string**
-        # for convenience.  Detect this shortcut and normalise it to the list
-        # representation that the rest of the Python code expects.
+        
         if isinstance(raw_content, str):
             raw_content = [{"type": "text", "text": raw_content}]
 
@@ -384,7 +374,7 @@ class Message(BaseModel):
                 contents.append(SystemContent(**raw))  # type: ignore[call-arg]
             elif raw.get("type") == "developer_content":
                 contents.append(DeveloperContent(**raw))  # type: ignore[call-arg]
-            else:  # pragma: no cover – unknown variant
+            else:  
                 raise ValueError(f"Unknown content variant: {raw}")
 
         msg = cls(author=author, content=contents)
@@ -398,29 +388,27 @@ class Conversation(BaseModel):
     messages: List[Message] = Field(default_factory=list)
 
     @classmethod
-    def from_messages(cls, messages: Sequence[Message]) -> "Conversation":  # noqa: D401
+    def from_messages(cls, messages: Sequence[Message]) -> "Conversation":  
         return cls(messages=list(messages))
 
     def __iter__(self):  # type: ignore[override]
         return iter(self.messages)
 
-    # Serialisation helpers -------------------------------------------------
+  
 
-    def to_dict(self) -> Dict[str, Any]:  # noqa: D401
+    def to_dict(self) -> Dict[str, Any]:  
         return {"messages": [m.to_dict() for m in self.messages]}
 
-    def to_json(self) -> str:  # noqa: D401
+    def to_json(self) -> str:  
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, payload: str) -> "Conversation":  # noqa: D401
+    def from_json(cls, payload: str) -> "Conversation": 
         data = json.loads(payload)
         return cls(messages=[Message.from_dict(m) for m in data["messages"]])
 
 
-# ---------------------------------------------------------------------------
-# Encoding interaction (thin wrappers around the Rust bindings)
-# ---------------------------------------------------------------------------
+
 
 
 class RenderConversationConfig(BaseModel):
@@ -437,19 +425,16 @@ class HarmonyEncoding:
     def __init__(self, inner: "_PyHarmonyEncoding"): # type: ignore
         self._inner = inner
 
-    # ------------------------------------------------------------------
-    # Delegated helpers
-    # ------------------------------------------------------------------
-
+    
     @property
-    def name(self) -> str:  # noqa: D401
-        return self._inner.name  # type: ignore[attr-defined]
+    def name(self) -> str:  
+        return self._inner.name 
 
     @functools.cached_property
     def special_tokens_set(self) -> "set[str]":
         return set(self._inner.special_tokens())
 
-    # -- Rendering -----------------------------------------------------
+   
 
     def render_conversation_for_completion(
         self,
@@ -519,7 +504,6 @@ class HarmonyEncoding:
             message_json=message.to_json(), render_options=render_options_dict
         )
 
-    # -- Parsing -------------------------------------------------------
 
     def parse_messages_from_completion_tokens(
         self,
@@ -533,7 +517,6 @@ class HarmonyEncoding:
         )
         return [Message.from_dict(m) for m in json.loads(raw_json)]
 
-    # -- Token decoding ------------------------------------------------
 
     def decode_utf8(self, tokens: Sequence[int]) -> str:
         """Decode a list of tokens into a UTF-8 string. Will raise an error if the tokens result in invalid UTF-8. Use decode if you want to replace invalid UTF-8 with the unicode replacement character."""
@@ -607,7 +590,6 @@ class HarmonyEncoding:
         """Returns if an individual token is a special token"""
         return self._inner.is_special_token(token)
 
-    # -- Stop tokens --------------------------------------------------
 
     def stop_tokens(self) -> List[int]:
         return self._inner.stop_tokens()
@@ -688,13 +670,13 @@ class StreamableParser:
         return self._inner.current_channel
 
 
-# Public helper --------------------------------------------------------------
+
 
 
 def load_harmony_encoding(name: Union[str, "HarmonyEncodingName"]) -> HarmonyEncoding:
     """Load an encoding by *name* (delegates to the Rust implementation)."""
 
-    # Allow both strings and enum values.
+   
     if not isinstance(name, str):
         name = str(name)
 
@@ -702,22 +684,20 @@ def load_harmony_encoding(name: Union[str, "HarmonyEncodingName"]) -> HarmonyEnc
     return HarmonyEncoding(inner)
 
 
-# For *mypy* we expose a minimal stub of the `HarmonyEncodingName` enum.  At
-# **runtime** the user is expected to pass the *string* names because the Rust
-# side only operates on strings anyway.
 
 
-class HarmonyEncodingName(str, Enum):  # noqa: D101 – simple enum stub
+
+class HarmonyEncodingName(str, Enum):  
     HARMONY_GPT_OSS = "HarmonyGptOss"
 
-    def __str__(self) -> str:  # noqa: D401
+    def __str__(self) -> str:  
         return str(self.value)
 
 
-# Import Q&A module
+
 from .qa_module import CustomQAModule
 
-# What should be re-exported when the user does ``from harmony import *``?
+
 __all__ = [
     "Role",
     "Author",

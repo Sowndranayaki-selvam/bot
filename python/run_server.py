@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 """
 Run the FastAPI server with dependency checks.
 """
@@ -47,17 +47,17 @@ def main():
     print("Q&A Module - FastAPI Server")
     print("=" * 50)
     
-    # Check dependencies
+    
     print("\nChecking dependencies...")
     check_dependencies()
     
-    # Check if running from correct directory
+   
     if not os.path.exists("qa_module.py"):
         print("\nError: Please run this script from the 'python' directory")
         print("Current directory:", os.getcwd())
         sys.exit(1)
     
-    # Import and run the server
+    
     print("\nStarting server...")
     print("=" * 50)
     

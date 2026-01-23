@@ -12,7 +12,7 @@ def main():
     print("Q&A Module - Trained on Your PDF Data Only")
     print("=" * 60)
     
-    # Check for Ollama
+  
     print("\nChecking for Ollama (local AI model)...")
     try:
         response = subprocess.run(
@@ -27,14 +27,13 @@ def main():
         print(f"Ollama not installed or not running")
         print("   Make sure 'ollama serve' is running in another terminal!")
         return
-    
-    # Check for PDF
+
     pdf_path = "../data/exchange.pdf"
     if not os.path.exists(pdf_path):
         print(f"Error: PDF not found at {pdf_path}")
         sys.exit(1)
     
-    # Import and initialize
+    
     print("Initializing Q&A module...")
     from qa_simple import CustomQAModule
     
@@ -47,7 +46,7 @@ def main():
             return
         raise
     
-    # Interactive Q&A
+   
     print("\n" + "=" * 60)
     print("Ask questions about your PDF (type 'quit' to exit)")
     print("=" * 60)

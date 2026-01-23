@@ -6,7 +6,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add the current directory to Python path so imports work correctly
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from fastapi import FastAPI, HTTPException
@@ -15,14 +15,14 @@ from pydantic import BaseModel
 from qa_module import CustomQAModule
 import uvicorn
 
-# Initialize FastAPI app
+
 app = FastAPI(
     title="Q&A Module API",
     description="Local Q&A service based on PDF data",
     version="1.0.0"
 )
 
-# Add CORS middleware to allow requests from any origin
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global QA module instance
+
 qa_module = None
 
 
@@ -57,11 +57,11 @@ async def startup_event():
     """Initialize the Q&A module when the server starts."""
     global qa_module
     
-    # Adjust path relative to the python directory
+   
     pdf_path = "data/exchange.pdf"
     
     if not os.path.exists(pdf_path):
-        # Try alternative path
+        
         pdf_path = "../data/exchange.pdf"
     
     if not os.path.exists(pdf_path):

@@ -38,7 +38,7 @@ class CustomQAModule:
             text += f"\n--- Page {page_num + 1} ---\n"
             text += page.extract_text()
         
-        # Split into chunks
+        
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
@@ -52,13 +52,13 @@ class CustomQAModule:
         """Create vector embeddings using Ollama"""
         print("Creating vector embeddings (using Ollama)...")
         
-        # Use Ollama embeddings (runs locally!)
+       
         embeddings = OllamaEmbeddings(
             model="mistral",
             base_url="http://localhost:11434"
         )
         
-        # Create ChromaDB vector store
+       
         self.vector_store = Chroma.from_texts(
             texts=self.documents,
             embedding=embeddings,

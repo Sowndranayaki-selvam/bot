@@ -25,14 +25,12 @@ class CustomQAModule:
         self.retriever = None
         self.qa_chain = None
 
-        # Initialize pipeline
+        
         self._load_pdf()
         self._create_vector_store()
         self._setup_qa_chain()
 
-    # -------------------------------------------------
-    # 1. LOAD AND SPLIT PDF PROPERLY
-    # -------------------------------------------------
+ 
     def _load_pdf(self):
         print(f"Loading PDF: {self.pdf_path}")
 
@@ -60,9 +58,7 @@ class CustomQAModule:
         self.documents = splitter.split_documents(docs)
         print(f"Loaded {len(self.documents)} chunks from PDF")
 
-    # -------------------------------------------------
-    # 2. CREATE / REBUILD VECTOR STORE (CORRECT PATH)
-    # -------------------------------------------------
+   
     def _create_vector_store(self):
         print("Creating vector embeddings...")
 
@@ -70,10 +66,10 @@ class CustomQAModule:
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
-        # IMPORTANT: always use correct path
+        
         persist_path = "data/chroma_db"
 
-        # Delete old DB to avoid stale indexes
+       
         if os.path.exists(persist_path):
             print("Removing old vector DB...")
             import shutil
@@ -88,9 +84,7 @@ class CustomQAModule:
         self.vector_store.persist()
         print("Vector store created successfully")
 
-    # -------------------------------------------------
-    # 3. SETUP RAG CHAIN PROPERLY
-    # -------------------------------------------------
+   
     def _setup_qa_chain(self):
         assert self.vector_store is not None
 
@@ -100,7 +94,7 @@ class CustomQAModule:
             base_url="http://localhost:11434"
         )
 
-        # Increase retrieval depth (deep pages!)
+        
         self.retriever = self.vector_store.as_retriever(
             search_type="similarity",
             search_kwargs={"k": 8}
@@ -113,7 +107,7 @@ class CustomQAModule:
                 [f"(Page {d.metadata['page']})\n{d.page_content}" for d in docs]
             )
 
-        # Proper RAG pipeline
+       
         self.qa_chain = (
             {
                 "context": self.retriever | format_docs,
@@ -126,9 +120,7 @@ class CustomQAModule:
 
         print("Q&A chain ready")
 
-    # -------------------------------------------------
-    # 4. PROMPT
-    # -------------------------------------------------
+   
     def _get_custom_prompt(self):
         template = """Use ONLY the following context to answer the question.
 If the answer is not present in the context, say:
@@ -148,21 +140,18 @@ Answer:"""
             input_variables=["context", "question"]
         )
 
-    # -------------------------------------------------
-    # 5. ASK FUNCTION WITH DEBUG
-    # -------------------------------------------------
     def ask(self, question: str) -> dict:
         assert self.retriever is not None
         assert self.qa_chain is not None
 
-        # Retrieve docs (debug)
+        
         relevant_docs = self.retriever.invoke(question)
 
         print("\n--- RETRIEVED CONTEXT PREVIEW ---")
         for d in relevant_docs[:3]:
             print(f"[Page {d.metadata['page']}] {d.page_content[:300]}...\n")
 
-        # Generate answer
+       
         answer = self.qa_chain.invoke(question)
 
         return {
@@ -171,9 +160,6 @@ Answer:"""
         }
 
 
-# -------------------------------------------------
-# TEST LOCALLY
-# -------------------------------------------------
 if __name__ == "__main__":
 
     pdf_path = "data/exchange.pdf"
