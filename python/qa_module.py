@@ -156,7 +156,7 @@ Answer:"""
 
         return {
             "answer": answer,
-            "sources": [d.metadata["page"] for d in relevant_docs]
+            "sources": []
         }
 
 
