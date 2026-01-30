@@ -41,7 +41,6 @@ class QuestionRequest(BaseModel):
 
 class QuestionResponse(BaseModel):
     answer: str
-    sources: list
 
 
 class BatchQuestionsRequest(BaseModel):
@@ -126,8 +125,7 @@ async def ask_question(request: QuestionRequest):
     try:
         result = qa_module.ask(request.question)
         return QuestionResponse(
-            answer=result["answer"],
-            sources=result["sources"]
+            answer=result["answer"]
         )
     except Exception as e:
         raise HTTPException(
@@ -165,8 +163,7 @@ async def ask_batch(request: BatchQuestionsRequest):
             if question.strip():
                 result = qa_module.ask(question)
                 results.append(QuestionResponse(
-                    answer=result["answer"],
-                    sources=result["sources"]
+                    answer=result["answer"]
                 ))
         
         return BatchQuestionsResponse(results=results)
